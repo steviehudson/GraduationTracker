@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GraduationTracker.Models;
+using GraduationTracker.Utilities;
 using Microsoft.VisualBasic;
 
 namespace GraduationTracker.DataAccess
@@ -17,10 +18,30 @@ namespace GraduationTracker.DataAccess
 
         public IEnumerable<Student> GetStudents()
         {
-            List<Student> students = new List<Student>();
+            IList<Student> students = new List<Student>();
 
             var ds = ReturnDataSet("[dbo].[GetRequirements]");
 
+            foreach (DataRow row in ds.Tables[0].Rows)
+            {
+                var studentId = row.Field<int>("StudentId");
+
+                var student = new Student(row.Field<int>("ID"), (Standing) row.Field<int>("Standing"))
+                {
+                    Courses = (from course in ds.Tables[2].AsEnumerable()
+                            select new Course(
+                                course.Field<int>("ID"),
+                                course.Field<string>("Name"),
+                                course.Field<int>("Mark"),
+                                course.Field<int>("Credits")
+                            ))
+                        .Where(x => x.Id = studentId)
+                        .Cast<Course>()
+                        .ToList()
+
+                };
+                students.Add(student);
+            }
             return students;
         }
 
@@ -36,7 +57,7 @@ namespace GraduationTracker.DataAccess
 
         public IEnumerable<Diploma> GetDiplomas()
         {
-            List<Diploma> diplomas = new List<Diploma>();
+            IList<Diploma> diplomas = new List<Diploma>();
 
             var ds = ReturnDataSet("[dbo].[GetDiplomas]");
 
@@ -55,7 +76,7 @@ namespace GraduationTracker.DataAccess
 
         public IEnumerable<Requirement> GetRequirements()
         {
-            List<Requirement> requirements = new List<Requirement>();
+            IList<Requirement> requirements = new List<Requirement>();
 
             var ds = ReturnDataSet("[dbo].[GetRequirements]");
 
