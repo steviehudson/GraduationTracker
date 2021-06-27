@@ -1,63 +1,91 @@
 ﻿using System;
+using System.Collections;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using GraduationTracker.Models;
 using GraduationTracker.Utilities;
+using GraduationTracker.DataAccess;
 
 namespace GraduationTracker
 {
-    public partial class GraduationTracker
-    {   
-        public Tuple<bool, Standing>  HasGraduated(Diploma diploma, Student student)
-        {
-            var credits = 0;
-            var average = 0;
-        
-            for(int i = 0; i < diploma.Requirements.Length; i++)
-            {
-                for(int j = 0; j < student.Courses.Length; j++)
-                {
-                    var requirement = Repository.GetRequirement(diploma.Requirements[i]);
+    public class GraduationTracker : IGraduationTracker
+    {
+        private IDatabaseProxy _dbProxy;
 
-                    for (int k = 0; k < requirement.Courses.Length; k++)
-                    {
-                        if (requirement.Courses[k] == student.Courses[j].Id)
-                        {
-                            average += student.Courses[j].Mark;
-                            if (student.Courses[j].Mark > requirement.MinimumMark)
-                            {
-                                credits += requirement.Credits;
-                            }
-                        }
-                    }
-                }
+        public GraduationTracker(IDatabaseProxy dbProxy)
+        {
+            _dbProxy = dbProxy;
+        }
+
+        public StudentResult GetStudentResult(int diplomaId, int studentId)
+        {
+            Student student;
+            Diploma diploma;
+
+            try 
+            {
+                student = _dbProxy.GetStudent(studentId);
+                diploma = _dbProxy.GetDiploma(diplomaId);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("GraduationTracker > GetStudentResult", e);
+
+                //TODO Messagebox
             }
 
-            average = average / student.Courses.Length;
+            GetTotals(diploma, student, out var totalCredits, out var totalMarks);
 
-            var standing = Standing.None;
+            var hasGraduated = HasGraduated(totalMarks / student.Courses.Count);
+            var standing = GetStanding(totalMarks / student.Courses.Count);
 
-            if (average < 50)
-                standing = Standing.Remedial;
-            else if (average < 80)
-                standing = Standing.Average;
-            else if (average < 95)
-                standing = Standing.MagnaCumLaude;
-            else
-                standing = Standing.MagnaCumLaude;
-
-            switch (standing)
-            {
-                case Standing.Remedial:
-                    return new Tuple<bool, Standing>(false, standing);
-                case Standing.Average:
-                    return new Tuple<bool, Standing>(true, standing);
-                case Standing.SumaCumLaude:
-                    return new Tuple<bool, Standing>(true, standing);
-                case Standing.MagnaCumLaude:
-                    return new Tuple<bool, Standing>(true, standing);
-
-                default:
-                    return new Tuple<bool, Standing>(false, standing);
-            } 
+            return new StudentResult(totalCredits, hasGraduated, standing);
         }
+
+       public void GetTotals(Diploma diploma, Student student, out int totalCredits, out int totalMarks)
+        {
+            totalCredits = 0;
+            totalMarks = 0;
+
+            foreach (var diplomaRequirement in diploma.Requirements)
+            {
+                Requirement requirement;
+                try
+                {
+                    requirement = _dbProxy.GetRequirement(diplomaRequirement);
+                }
+                catch (Exception e)
+                {
+                    throw new InvalidOperationException("GraduationTracker > GetStudentResult", e);
+
+                    //TODO Messagebox
+                }
+
+                var studentCourse = student.Courses.FirstOrDefault(x => x.CourseId == requirement.CourseId);
+
+                if (studentCourse != null)
+                {
+                    totalMarks += studentCourse.Mark;
+                    if (studentCourse.Mark >= requirement.MinimumMark) totalCredits += requirement.Credits;
+                }
+            }
+        }
+       
+       public bool HasGraduated(int average) => average >= 50;
+
+       public Standing GetStanding(int average)
+       {
+           switch (average)
+           {
+                case < 50 :
+                    return Standing.Remedial;
+                case < 80 :
+                    return Standing.Average;
+                case < 95 :
+                    return Standing.MagnaCumLaude;
+                default :
+                    return Standing.SumaCumLaude;
+           }
+       }
     }
 }

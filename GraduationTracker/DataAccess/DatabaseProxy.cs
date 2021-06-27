@@ -1,77 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using GraduationTracker.Models;
 using GraduationTracker.Utilities;
-using Microsoft.VisualBasic;
 
 namespace GraduationTracker.DataAccess
 {
     public class DatabaseProxy : IDatabaseProxy
     {
-        private string connString = ConfigurationManager.AppSettings["connectionString"];
+        private readonly string _connString = ConfigurationManager.AppSettings["connectionString"];
+
+        #region Reads
 
         public IEnumerable<Student> GetStudents()
         {
-            IList<Student> students = new List<Student>();
-
             var ds = ReturnDataSet("[dbo].[GetRequirements]");
 
-            foreach (DataRow row in ds.Tables[0].Rows)
-            {
-                var studentId = row.Field<int>("StudentId");
-
-                var student = new Student(row.Field<int>("ID"), (Standing) row.Field<int>("Standing"))
-                {
-                    Courses = (from course in ds.Tables[2].AsEnumerable()
-                            select new Course(
-                                course.Field<int>("ID"),
-                                course.Field<string>("Name"),
-                                course.Field<int>("Mark"),
-                                course.Field<int>("Credits")
-                            ))
-                        .Where(x => x.Id = studentId)
-                        .Cast<Course>()
-                        .ToList()
-
-                };
-                students.Add(student);
-            }
-            return students;
+            return (from DataRow row in ds.Tables[0].Rows
+                let studentId = row.Field<int>("StudentId")
+                let courses = (from course in ds.Tables[1].AsEnumerable() select new Course(course.Field<int>("ID"), course.Field<int>("CourseId"), course.Field<string>("Name"), course.Field<int>("Mark")))
+                    .Where(x => x.Id == studentId)
+                    .Cast<Course>()
+                    .ToList()
+                select new Student(row.Field<int>("ID"), courses)).ToList();
         }
 
         public Student GetStudent(int id)
         {
-            Student student = new Student();
-
-            SqlParameter[] parameters = { new SqlParameter("@ID", id) };
-            var ds = ReturnDataSet("[dbo].[GetStudents]", parameters);
-
-            return student;
+            var students = GetStudents();
+            return students.FirstOrDefault(x => x.Id == id);
         }
 
         public IEnumerable<Diploma> GetDiplomas()
         {
-            IList<Diploma> diplomas = new List<Diploma>();
-
             var ds = ReturnDataSet("[dbo].[GetDiplomas]");
 
-            return diplomas;
+            return (from DataRow row in ds.Tables[0].Rows
+                let diplomaId = row.Field<int>("DiplomasId")
+                let requirements = (from requirement in ds.Tables[1].AsEnumerable() select requirement.Field<int>("Requirement"))
+                    .Where(x => x == diplomaId)
+                    .Cast<int>()
+                    .ToArray()
+                select new Diploma(row.Field<int>("ID"), row.Field<int>("Credits"), requirements)).ToList();
         }
 
         public Diploma GetDiploma(int id)
         {
-            Diploma diploma = new Diploma();
-
-            SqlParameter[] parameters = { new SqlParameter("@ID", id) };
-            var ds = ReturnDataSet("[dbo].[GetStudents]", parameters);
-
-            return diploma;
+            var diplomas= GetDiplomas();
+            return diplomas.FirstOrDefault(x => x.Id == id);
         }
 
         public IEnumerable<Requirement> GetRequirements()
@@ -80,25 +58,36 @@ namespace GraduationTracker.DataAccess
 
             var ds = ReturnDataSet("[dbo].[GetRequirements]");
 
-            return requirements;
+            return (from DataRow row in ds.Tables[0].Rows
+                let requirementId = row.Field<int>("DiplomasId")
+                let modules = (from requirement in ds.Tables[1].AsEnumerable() select requirement.Field<int>("ModuleId"))
+                    .Where(x => x == requirementId)
+                    .Cast<int>()
+                    .ToArray()
+                select new Requirement(row.Field<int>("ID"), row.Field<int>("CourseId"), row.Field<int>("MinimumMark"), row.Field<int>("Credits"), modules)).ToList();
         }
+
+        #endregion
 
         public Requirement GetRequirement(int id)
         {
-            Requirement requirement = new Requirement();
-
-            SqlParameter[] parameters = { new SqlParameter("@ID", id)};
-            var ds = ReturnDataSet("[dbo].[GetRequirements]", parameters);
-
-            return requirement;
-
+            var requirements = GetRequirements();
+            return requirements.FirstOrDefault(x => x.Id == id);
         }
+
+        #region Writes
+
+        //TODO: inserts/updates
+
+        #endregion
+
+        #region SQL Methods
 
         public DataSet ReturnDataSet(string storedProc, params SqlParameter[] parameters)
         {
             DataSet ds = new DataSet();
 
-            using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlConnection conn = new SqlConnection(_connString))
             {
                 //conn.Open();
                 var cmd = new SqlCommand(storedProc, conn)
@@ -116,5 +105,7 @@ namespace GraduationTracker.DataAccess
                 return ds;
             }
         }
+
+        #endregion
     }
 }
