@@ -130,21 +130,6 @@ namespace GraduationTracker.Tests.Unit
         [TestMethod]
         [DataRow(80, DisplayName = "First Test - Average = 80")]
         [DataRow(94, DisplayName = "Second Test - Average = 94")]
-        public void TestGetStanding_ReturnMagnaCumLaude(int average)
-        {
-            //Arrange
-            Standing standing;
-
-            //Act
-            standing = _sut.GetStanding(average);
-
-            //Assert
-            Assert.AreEqual(standing, Standing.MagnaCumLaude);
-        }
-
-        [TestMethod]
-        [DataRow(95, DisplayName = "First Test - Average = 95")]
-        [DataRow(100, DisplayName = "Second Test - Average = 100")]
         public void TestGetStanding_ReturnSumaCumLaude(int average)
         {
             //Arrange
@@ -155,6 +140,21 @@ namespace GraduationTracker.Tests.Unit
 
             //Assert
             Assert.AreEqual(standing, Standing.SumaCumLaude);
+        }
+
+        [TestMethod]
+        [DataRow(95, DisplayName = "First Test - Average = 95")]
+        [DataRow(100, DisplayName = "Second Test - Average = 100")]
+        public void TestGetStanding_ReturnMagnaCumLaude(int average)
+        {
+            //Arrange
+            Standing standing;
+
+            //Act
+            standing = _sut.GetStanding(average);
+
+            //Assert
+            Assert.AreEqual(standing, Standing.MagnaCumLaude);
         }
     }
 }

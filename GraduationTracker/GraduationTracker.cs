@@ -82,9 +82,9 @@ namespace GraduationTracker
                 case < 80 :
                     return Standing.Average;
                 case < 95 :
-                    return Standing.MagnaCumLaude;
-                default :
                     return Standing.SumaCumLaude;
+                default :
+                    return Standing.MagnaCumLaude;
            }
        }
     }
