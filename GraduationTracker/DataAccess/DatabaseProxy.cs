@@ -4,7 +4,6 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using GraduationTracker.Models;
-using GraduationTracker.Utilities;
 
 namespace GraduationTracker.DataAccess
 {
@@ -16,7 +15,7 @@ namespace GraduationTracker.DataAccess
 
         public IEnumerable<Student> GetStudents()
         {
-            var ds = ReturnDataSet("[dbo].[GetRequirements]");
+            var ds = ReturnDataSet("[dbo].[GetStudents]");
 
             return (from DataRow row in ds.Tables[0].Rows
                 let studentId = row.Field<int>("StudentId")
@@ -27,6 +26,7 @@ namespace GraduationTracker.DataAccess
                 select new Student(row.Field<int>("ID"), courses)).ToList();
         }
 
+        //TODO implement cache
         public Student GetStudent(int id)
         {
             var students = GetStudents();
@@ -46,6 +46,7 @@ namespace GraduationTracker.DataAccess
                 select new Diploma(row.Field<int>("ID"), row.Field<int>("Credits"), requirements)).ToList();
         }
 
+        //TODO implement cache
         public Diploma GetDiploma(int id)
         {
             var diplomas= GetDiplomas();
@@ -69,6 +70,7 @@ namespace GraduationTracker.DataAccess
 
         #endregion
 
+        //TODO implement cache
         public Requirement GetRequirement(int id)
         {
             var requirements = GetRequirements();

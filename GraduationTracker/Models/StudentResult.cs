@@ -1,6 +1,6 @@
 ﻿using GraduationTracker.Utilities;
 
-namespace GraduationTracker
+namespace GraduationTracker.Models
 {
     public class StudentResult
     {

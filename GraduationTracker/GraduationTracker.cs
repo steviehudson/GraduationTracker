@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using GraduationTracker.Models;
 using GraduationTracker.Utilities;
 using GraduationTracker.DataAccess;
@@ -75,17 +73,13 @@ namespace GraduationTracker
 
        public Standing GetStanding(int average)
        {
-           switch (average)
+           return average switch
            {
-                case < 50 :
-                    return Standing.Remedial;
-                case < 80 :
-                    return Standing.Average;
-                case < 95 :
-                    return Standing.SumaCumLaude;
-                default :
-                    return Standing.MagnaCumLaude;
-           }
+               < 50 => Standing.Remedial,
+               < 80 => Standing.Average,
+               < 95 => Standing.SumaCumLaude,
+               _ => Standing.MagnaCumLaude,
+           };
        }
     }
 }
